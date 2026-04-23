@@ -1,0 +1,166 @@
+/* ========== RESET ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ========== BASE STYLES ========== */
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    line-height: 1.6;
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+section {
+    padding: 30px;
+}
+
+hr {
+    margin: 30px 0;
+    border: none;
+    border-top: 1px solid #ddd;
+}
+
+/* ========== TOP SECTION ========== */
+.Toppper {
+    text-align: center;
+    background-color: #ffffff;
+}
+
+#name {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.Toppper p {
+    font-size: 1.1rem;
+    color: #555;
+}
+
+.Toppper img {
+    margin-top: 15px;
+    border-radius: 50%;
+}
+
+/* ========== NAVBAR ========== */
+.Navbar {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    background-color: #222;
+    padding: 15px;
+}
+
+.Navtext {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.Navtext:hover {
+    color: #00adb5;
+}
+
+/* ========== PROJECTS ========== */
+.Projects {
+    background-color: #ffffff;
+}
+
+.Projecttitle {
+    text-align: center;
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+}
+
+.Projecttext {
+    margin-bottom: 15px;
+}
+
+.Projecttext h5 {
+    font-size: 1.1rem;
+}
+
+.Projecttext a {
+    margin-left: 10px;
+    font-size: 0.9rem;
+}
+
+/* ========== SKILLS ========== */
+.Skills {
+    background-color: #ffffff;
+}
+
+.Skilltitle {
+    text-align: center;
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+}
+
+.Skills ul {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    list-style: none;
+}
+
+.skilltext {
+    background-color: #00adb5;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+}
+
+/* ========== TABLE ========== */
+.tb {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.tb th,
+.tb td {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: center;
+}
+
+.tb thead {
+    background-color: #222;
+    color: white;
+}
+
+/* ========== FORM ========== */
+form {
+    max-width: 400px;
+    margin: auto;
+}
+
+label {
+    display: block;
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+}
+
+input[type="submit"] {
+    margin-top: 20px;
+    background-color: #00adb5;
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+}
+
+input[type="submit"]:hover {
+    background-color: #008c91;
+}

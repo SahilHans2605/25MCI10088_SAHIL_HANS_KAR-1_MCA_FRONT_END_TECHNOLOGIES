@@ -1,0 +1,55 @@
+*{
+    margin: 0%;
+    padding: 0%;
+    box-sizing: border-box;
+
+}
+html,body{
+    display: flex;
+    flex-direction: column;
+}
+.Toppper{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: beige;
+}
+.Navbar{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 400px;
+    background-color:darkslategray;
+}
+.Navtext{
+    padding: 2px;
+    background-color: black;
+    color: white;
+}
+.Projects {
+    display: flex;
+    flex-direction: column;
+    background-color: blanchedalmond;
+}
+.Projecttitle {
+    text-align: center;
+}
+.Projecttext {
+    text-align: left;
+    width: 100%;
+}
+.Skills {
+    display: flex;
+    flex-direction: column;
+    background-color:pink;
+    padding: 15px;
+}
+.Skilltitle{
+    text-align: center;
+}
+.tb{
+    width: 100%;
+    text-align: center;
+    height: 200px;
+    border-collapse: collapse;
+}
