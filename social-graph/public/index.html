@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GraphNet — Social Network Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0c10; --surface: #111318; --surface2: #191c24;
+    --border: #252932; --accent: #00e5ff; --accent2: #7b61ff;
+    --accent3: #ff5f6d; --accent4: #39ff8a; --text: #e8eaf0;
+    --muted: #6b7280; --radius: 10px;
+    --mono: 'Space Mono', monospace; --sans: 'Syne', sans-serif;
+  }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; overflow-x: hidden; }
+  .app { max-width: 1400px; margin: 0 auto; padding: 0 24px 60px; }
+
+  header { display: flex; align-items: center; gap: 16px; padding: 28px 0 32px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+  .logo-icon { width: 46px; height: 46px; background: linear-gradient(135deg,var(--accent),var(--accent2)); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 0 30px rgba(0,229,255,.25); }
+  .logo-text h1 { font-size: 26px; font-weight: 800; letter-spacing: -1px; }
+  .logo-text h1 span { color: var(--accent); }
+  .logo-text p { font-size: 12px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+  .header-stats { margin-left: auto; display: flex; gap: 24px; }
+  .stat .num { font-size: 28px; font-weight: 800; color: var(--accent); font-family: var(--mono); text-align:right; }
+  .stat .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+  .grid { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
+  @media(max-width:900px){ .grid{ grid-template-columns:1fr; } }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; }
+  .panel-header { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+  .panel-header h2 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .panel-body { padding: 18px; }
+
+  label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; font-family: var(--mono); }
+  .field { margin-bottom: 12px; }
+  input[type=text], select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    font-family: var(--mono); font-size: 13px; padding: 9px 11px; border-radius: 6px; outline: none;
+    transition: border-color .2s, box-shadow .2s; appearance: none;
+  }
+  input[type=text]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,229,255,.1); }
+  select option { background: var(--surface2); }
+
+  .btn { width:100%; padding:10px 14px; border:none; border-radius:6px; font-family:var(--sans); font-size:13px; font-weight:700; cursor:pointer; transition:transform .15s, box-shadow .15s; letter-spacing:.5px; text-transform:uppercase; }
+  .btn:hover { transform:translateY(-1px); }
+  .btn:active { transform:translateY(0); opacity:.85; }
+  .btn-primary { background:var(--accent); color:#000; box-shadow:0 4px 18px rgba(0,229,255,.3); }
+  .btn-purple  { background:var(--accent2); color:#fff; box-shadow:0 4px 18px rgba(123,97,255,.3); }
+  .btn-red     { background:var(--accent3); color:#fff; box-shadow:0 4px 18px rgba(255,95,109,.3); }
+  .btn-green   { background:var(--accent4); color:#000; box-shadow:0 4px 18px rgba(57,255,138,.3); }
+  .btn-ghost   { background:transparent; color:var(--text); border:1px solid var(--border); }
+  .btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-row  { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:4px; }
+
+  .sep { height:1px; background:var(--border); margin:16px 0; }
+  .sec-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; font-family:var(--mono); }
+
+  .right { display:flex; flex-direction:column; gap:20px; }
+
+  canvas { width:100%; height:400px; display:block; background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); cursor:grab; }
+  canvas:active { cursor:grabbing; }
+
+  .result-zone { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .result-tabs { display:flex; border-bottom:1px solid var(--border); overflow-x:auto; }
+  .tab { padding:11px 18px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; cursor:pointer; color:var(--muted); border-bottom:2px solid transparent; transition:color .2s; white-space:nowrap; font-family:var(--mono); }
+  .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+  .tab-panel { display:none; padding:20px; min-height:150px; }
+  .tab-panel.active { display:block; }
+
+  .user-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
+  .user-card { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:12px; transition:border-color .2s,transform .15s; }
+  .user-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+  .avatar { width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;margin-bottom:7px; }
+  .uname { font-size:13px;font-weight:700; }
+  .udeg  { font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:1px; }
+  .friend-tags { display:flex;flex-wrap:wrap;gap:3px;margin-top:6px; }
+  .ftag { font-size:10px;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--border); }
+
+  .result-list { display:flex;flex-wrap:wrap;gap:8px; }
+  .chip { padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;font-family:var(--mono); }
+  .chip-cyan   { background:rgba(0,229,255,.12);color:var(--accent);border:1px solid rgba(0,229,255,.25); }
+  .chip-purple { background:rgba(123,97,255,.12);color:var(--accent2);border:1px solid rgba(123,97,255,.25); }
+  .chip-red    { background:rgba(255,95,109,.12);color:var(--accent3);border:1px solid rgba(255,95,109,.25); }
+  .chip-green  { background:rgba(57,255,138,.12);color:var(--accent4);border:1px solid rgba(57,255,138,.25); }
+  .chip-gray   { background:rgba(255,255,255,.06);color:var(--muted);border:1px solid var(--border); }
+
+  .path-row { display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px; }
+  .path-node { padding:8px 16px;background:var(--surface2);border:1px solid var(--accent);border-radius:6px;font-family:var(--mono);font-size:13px;color:var(--accent); }
+  .path-arrow { color:var(--muted);font-size:18px; }
+
+  .comm-block { margin-bottom:14px; }
+  .comm-label { font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-family:var(--mono);margin-bottom:7px; }
+
+  .empty { color:var(--muted);font-size:13px;font-family:var(--mono);padding:12px 0; }
+
+  #toast { position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:700;font-family:var(--mono);pointer-events:none;opacity:0;transform:translateY(10px);transition:opacity .3s,transform .3s;max-width:300px; }
+  #toast.show { opacity:1;transform:translateY(0); }
+  #toast.ok  { background:rgba(57,255,138,.15);color:var(--accent4);border:1px solid rgba(57,255,138,.3); }
+  #toast.err { background:rgba(255,95,109,.15);color:var(--accent3);border:1px solid rgba(255,95,109,.3); }
+  #toast.inf { background:rgba(0,229,255,.1);color:var(--accent);border:1px solid rgba(0,229,255,.2); }
+
+  .algo-badge { display:inline-block;font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;margin-left:8px;vertical-align:middle; }
+  .bfs-badge { background:rgba(0,229,255,.15);color:var(--accent);border:1px solid rgba(0,229,255,.3); }
+  .dfs-badge { background:rgba(123,97,255,.15);color:var(--accent2);border:1px solid rgba(123,97,255,.3); }
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <div class="logo-icon">🕸️</div>
+  <div class="logo-text">
+    <h1>Graph<span>Net</span></h1>
+    <p>Social Network Analysis · DFS + BFS · In-Memory Graph</p>
+  </div>
+  <div class="header-stats">
+    <div class="stat"><div class="num" id="stat-v">0</div><div class="lbl">Nodes (V)</div></div>
+    <div class="stat"><div class="num" id="stat-e">0</div><div class="lbl">Edges (E)</div></div>
+  </div>
+</header>
+
+<div class="grid">
+  <!-- LEFT SIDEBAR -->
+  <div>
+
+    <!-- Add User -->
+    <div class="panel">
+      <div class="panel-header"><div class="dot"></div><h2>Add Node (User)</h2></div>
+      <div class="panel-body">
+        <div class="field">
+          <label>Username</label>
+          <input type="text" id="new-user" placeholder="e.g. Charlie" />
+        </div>
+        <button class="btn btn-primary" onclick="addUser()">＋ Add User</button>
+      </div>
+    </div>
+
+    <!-- Manage Edges -->
+    <div class="panel">
+      <div class="panel-header"><div class="dot" style="background:var(--accent2);box-shadow:0 0 8px var(--accent2)"></div><h2>Manage Edges</h2></div>
+      <div class="panel-body">
+        <div class="field"><label>User A</label><select id="conn-a"><option value="">— select —</option></select></div>
+        <div class="field"><label>User B</label><select id="conn-b"><option value="">— select —</option></select></div>
+        <div class="btn-row">
+          <button class="btn btn-purple" onclick="addConnection()">＋ Connect</button>
+          <button class="btn btn-red"    onclick="removeConnection()">✕ Remove</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analysis -->
+    <div class="panel">
+      <div class="panel-header"><div class="dot" style="background:var(--accent4);box-shadow:0 0 8px var(--accent4)"></div><h2>Analysis</h2></div>
+      <div class="panel-body">
+
+        <div class="sec-label">Mutual Friends</div>
+        <div class="field"><label>User 1</label><select id="mut-a"><option value="">— select —</option></select></div>
+        <div class="field"><label>User 2</label><select id="mut-b"><option value="">— select —</option></select></div>
+        <button class="btn btn-ghost" style="margin-bottom:14px" onclick="getMutual()">🤝 Find Mutual Friends</button>
+
+        <div class="sep"></div>
+
+        <div class="sec-label">Friend Suggestions <span class="algo-badge bfs-badge">BFS</span></div>
+        <div class="field"><label>User</label><select id="sug-u"><option value="">— select —</option></select></div>
+        <button class="btn btn-ghost" style="margin-bottom:14px" onclick="getSuggestions()">🔍 Suggest Friends</button>
+
+        <div class="sep"></div>
+
+        <div class="sec-label">Shortest Path <span class="algo-badge bfs-badge">BFS</span></div>
+        <div class="field"><label>From</label><select id="path-a"><option value="">— select —</option></select></div>
+        <div class="field"><label>To</label><select id="path-b"><option value="">— select —</option></select></div>
+        <button class="btn btn-ghost" style="margin-bottom:14px" onclick="getPath()">🗺 Find Shortest Path</button>
+
+        <div class="sep"></div>
+
+        <div class="sec-label">Community Detection <span class="algo-badge dfs-badge">DFS</span></div>
+        <button class="btn btn-green" onclick="getCommunities()">⬡ Detect Communities</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="right">
+
+    <!-- Canvas -->
+    <div class="panel" style="padding:0;overflow:hidden">
+      <div class="panel-header">
+        <div class="dot"></div>
+        <h2>Live Graph Visualization</h2>
+        <small style="margin-left:auto;color:var(--muted);font-family:var(--mono);font-size:11px">drag nodes</small>
+      </div>
+      <canvas id="gc"></canvas>
+    </div>
+
+    <!-- Results -->
+    <div class="result-zone">
+      <div class="result-tabs">
+        <div class="tab active" id="tab-users"       onclick="switchTab('users')">👤 Users</div>
+        <div class="tab"        id="tab-mutual"      onclick="switchTab('mutual')">🤝 Mutual</div>
+        <div class="tab"        id="tab-suggest"     onclick="switchTab('suggest')">✨ Suggestions</div>
+        <div class="tab"        id="tab-communities" onclick="switchTab('communities')">⬡ Communities</div>
+        <div class="tab"        id="tab-path"        onclick="switchTab('path')">🗺 Path</div>
+      </div>
+      <div class="tab-panel active" id="panel-users"><div class="user-grid" id="users-grid"></div></div>
+      <div class="tab-panel" id="panel-mutual"><div id="r-mutual" class="empty">Select two users → Find Mutual Friends</div></div>
+      <div class="tab-panel" id="panel-suggest"><div id="r-suggest" class="empty">Select a user → Suggest Friends (BFS level-2)</div></div>
+      <div class="tab-panel" id="panel-communities"><div id="r-communities" class="empty">Click Detect Communities to run DFS</div></div>
+      <div class="tab-panel" id="panel-path"><div id="r-path" class="empty">Select start + end → Find Shortest Path (BFS)</div></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  GRAPH DATA STRUCTURE — Adjacency List (in-memory)
+//  graph[name] = Set of neighbor names
+// ═══════════════════════════════════════════════════════
+const graph = {};   // { "Alice": Set{"Bob","Carol"}, ... }
+
+// ── Helpers ──────────────────────────────────────────
+function userExists(n) { return Object.prototype.hasOwnProperty.call(graph, n); }
+
+function _addUser(name) {
+  if (!userExists(name)) graph[name] = new Set();
+}
+
+function _addEdge(a, b) {
+  if (!userExists(a) || !userExists(b) || a === b) return false;
+  if (graph[a].has(b)) return false;
+  graph[a].add(b);
+  graph[b].add(a);
+  return true;
+}
+
+function _removeEdge(a, b) {
+  if (!userExists(a) || !userExists(b)) return false;
+  graph[a].delete(b);
+  graph[b].delete(a);
+  return true;
+}
+
+function edgeCount() {
+  let total = 0;
+  for (const k of Object.keys(graph)) total += graph[k].size;
+  return total / 2;
+}
+
+// ── Seed data ────────────────────────────────────────
+(function seed() {
+  ['Alice','Bob','Carol','Dave','Eve','Frank','Grace','Hank'].forEach(_addUser);
+  [['Alice','Bob'],['Alice','Carol'],['Alice','Dave'],
+   ['Bob','Carol'],['Bob','Eve'],['Carol','Frank'],
+   ['Dave','Grace'],['Eve','Frank'],['Eve','Hank'],['Grace','Hank']
+  ].forEach(([a,b]) => _addEdge(a,b));
+})();
+
+// ═══════════════════════════════════════════════════════
+//  ALGORITHMS
+// ═══════════════════════════════════════════════════════
+
+// Mutual Friends — set intersection  O(min(deg_a, deg_b))
+function mutualFriends(u1, u2) {
+  if (!userExists(u1) || !userExists(u2)) return [];
+  return [...graph[u1]].filter(f => graph[u2].has(f));
+}
+
+// Friend Suggestions — BFS level-2  O(V + E)
+function suggestFriends(user) {
+  if (!userExists(user)) return [];
+  const visited = new Set([user]);
+  const queue   = [[user, 0]];
+  const result  = new Set();
+  while (queue.length) {
+    const [curr, depth] = queue.shift();
+    if (depth >= 2) continue;
+    for (const nb of graph[curr]) {
+      if (!visited.has(nb)) {
+        visited.add(nb);
+        if (depth === 1 && !graph[user].has(nb)) result.add(nb);
+        queue.push([nb, depth + 1]);
+      }
+    }
+  }
+  return [...result];
+}
+
+// Community Detection — DFS connected components  O(V + E)
+function detectCommunities() {
+  const visited = new Set();
+  const communities = [];
+  function dfs(node, community) {
+    visited.add(node);
+    community.push(node);
+    for (const nb of graph[node]) {
+      if (!visited.has(nb)) dfs(nb, community);
+    }
+  }
+  for (const node of Object.keys(graph)) {
+    if (!visited.has(node)) {
+      const c = [];
+      dfs(node, c);
+      communities.push(c);
+    }
+  }
+  return communities;
+}
+
+// Shortest Path — BFS + parent tracking  O(V + E)
+function shortestPath(start, end) {
+  if (!userExists(start) || !userExists(end)) return null;
+  if (start === end) return [start];
+  const visited = new Set([start]);
+  const queue   = [start];
+  const parent  = { [start]: null };
+  while (queue.length) {
+    const curr = queue.shift();
+    for (const nb of graph[curr]) {
+      if (!visited.has(nb)) {
+        visited.add(nb);
+        parent[nb] = curr;
+        if (nb === end) {
+          const path = [];
+          let node = end;
+          while (node !== null) { path.unshift(node); node = parent[node]; }
+          return path;
+        }
+        queue.push(nb);
+      }
+    }
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════════════
+const COLS = ['#00e5ff','#7b61ff','#ff5f6d','#39ff8a','#f59e0b','#ec4899','#14b8a6','#f97316'];
+function colFor(name) { return COLS[name.charCodeAt(0) % COLS.length]; }
+
+let toastTimer = null;
+function toast(msg, type='inf') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// Update all dropdowns from current graph state
+function refreshDropdowns() {
+  const names = Object.keys(graph);
+  ['conn-a','conn-b','mut-a','mut-b','sug-u','path-a','path-b'].forEach(id => {
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">— select —</option>';
+    names.forEach(n => {
+      const o = document.createElement('option');
+      o.value = o.textContent = n;
+      sel.appendChild(o);
+    });
+    if (names.includes(cur)) sel.value = cur;
+  });
+}
+
+// Render users tab
+function renderUsers() {
+  const names = Object.keys(graph);
+  document.getElementById('stat-v').textContent = names.length;
+  document.getElementById('stat-e').textContent = edgeCount();
+  const grid = document.getElementById('users-grid');
+  if (names.length === 0) { grid.innerHTML = '<div class="empty">No users yet. Add one above!</div>'; return; }
+  grid.innerHTML = names.map(n => {
+    const c = colFor(n);
+    const friends = [...graph[n]];
+    return `
+      <div class="user-card">
+        <div class="avatar" style="background:${c}22;color:${c};border:1px solid ${c}44">${n[0]}</div>
+        <div class="uname">${n}</div>
+        <div class="udeg">${friends.length} connection${friends.length!==1?'s':''}</div>
+        <div class="friend-tags">${friends.map(f=>`<span class="ftag">${f}</span>`).join('')}</div>
+      </div>`;
+  }).join('');
+}
+
+function refreshAll() {
+  refreshDropdowns();
+  renderUsers();
+  drawGraph();
+}
+
+// ═══════════════════════════════════════════════════════
+//  USER ACTIONS
+// ═══════════════════════════════════════════════════════
+function addUser() {
+  const input = document.getElementById('new-user');
+  const name  = input.value.trim();
+  if (!name)              { toast('Enter a username!', 'err'); return; }
+  if (userExists(name))   { toast(`"${name}" already exists!`, 'err'); return; }
+  _addUser(name);
+  input.value = '';
+  toast(`User "${name}" added!`, 'ok');
+  refreshAll();
+  switchTab('users');
+}
+
+function addConnection() {
+  const a = document.getElementById('conn-a').value;
+  const b = document.getElementById('conn-b').value;
+  if (!a || !b)     { toast('Select both users!', 'err'); return; }
+  if (a === b)      { toast("Can't connect a user to themselves!", 'err'); return; }
+  if (graph[a].has(b)) { toast(`${a} and ${b} are already connected!`, 'err'); return; }
+  _addEdge(a, b);
+  toast(`${a} ↔ ${b} connected!`, 'ok');
+  refreshAll();
+}
+
+function removeConnection() {
+  const a = document.getElementById('conn-a').value;
+  const b = document.getElementById('conn-b').value;
+  if (!a || !b)           { toast('Select both users!', 'err'); return; }
+  if (!graph[a].has(b))   { toast(`${a} and ${b} are not connected!`, 'err'); return; }
+  _removeEdge(a, b);
+  toast(`${a} ↔ ${b} disconnected`, 'inf');
+  refreshAll();
+}
+
+function getMutual() {
+  const u1 = document.getElementById('mut-a').value;
+  const u2 = document.getElementById('mut-b').value;
+  if (!u1 || !u2) { toast('Select both users!', 'err'); return; }
+  const mutual = mutualFriends(u1, u2);
+  const el = document.getElementById('r-mutual');
+  el.innerHTML = mutual.length === 0
+    ? `<div class="empty">😕 No mutual friends between <b>${u1}</b> and <b>${u2}</b></div>`
+    : `<p style="font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:12px">
+        ${mutual.length} mutual friend${mutual.length>1?'s':''} between
+        <span style="color:var(--accent)">${u1}</span> and <span style="color:var(--accent)">${u2}</span>
+       </p>
+       <div class="result-list">${mutual.map(f=>`<span class="chip chip-cyan">👤 ${f}</span>`).join('')}</div>`;
+  switchTab('mutual');
+}
+
+function getSuggestions() {
+  const user = document.getElementById('sug-u').value;
+  if (!user) { toast('Select a user!', 'err'); return; }
+  const sugg = suggestFriends(user);
+  const el = document.getElementById('r-suggest');
+  el.innerHTML = sugg.length === 0
+    ? `<div class="empty">🤷 No suggestions for <b>${user}</b> — already knows everyone reachable!</div>`
+    : `<p style="font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:12px">
+        ${sugg.length} suggestion${sugg.length>1?'s':''} for <span style="color:var(--accent2)">${user}</span>
+        via BFS level-2 traversal
+       </p>
+       <div class="result-list">${sugg.map(s=>`<span class="chip chip-purple">✨ ${s}</span>`).join('')}</div>`;
+  switchTab('suggest');
+}
+
+function getPath() {
+  const a = document.getElementById('path-a').value;
+  const b = document.getElementById('path-b').value;
+  if (!a || !b) { toast('Select start and end!', 'err'); return; }
+  const path = shortestPath(a, b);
+  const el = document.getElementById('r-path');
+  if (!path) {
+    el.innerHTML = `<div class="empty">🚫 No path found between <b>${a}</b> and <b>${b}</b> — disconnected graph!</div>`;
+  } else {
+    const hops = path.length - 1;
+    el.innerHTML = `
+      <p style="font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:12px">
+        Shortest path: <span style="color:var(--accent4)">${hops} hop${hops!==1?'s':''}</span> · BFS parent tracking
+      </p>
+      <div class="path-row">
+        ${path.map((n,i) => `${i>0?'<span class="path-arrow">→</span>':''}
+          <span class="path-node">${n}</span>`).join('')}
+      </div>`;
+  }
+  switchTab('path');
+  highlightPath = path || [];
+  drawGraph();
+}
+
+function getCommunities() {
+  const comms = detectCommunities();
+  const chipClasses = ['chip-cyan','chip-purple','chip-red','chip-green'];
+  document.getElementById('r-communities').innerHTML =
+    `<p style="font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:14px">
+       ${comms.length} connected component${comms.length!==1?'s':''} — DFS traversal
+     </p>` +
+    comms.map((c,i) => `
+      <div class="comm-block">
+        <div class="comm-label">Community ${i+1} · ${c.length} member${c.length!==1?'s':''}</div>
+        <div class="result-list">${c.map(u=>`<span class="chip ${chipClasses[i%4]}">👤 ${u}</span>`).join('')}</div>
+      </div>`).join('');
+  switchTab('communities');
+}
+
+// ═══════════════════════════════════════════════════════
+//  GRAPH VISUALIZATION — Force-Directed Canvas
+// ═══════════════════════════════════════════════════════
+const canvas = document.getElementById('gc');
+const ctx    = canvas.getContext('2d');
+const pos    = {};   // { name: {x,y,vx,vy} }
+let dragging = null;
+let highlightPath = [];
+let animId   = null;
+
+function ensurePositions() {
+  const W = canvas.clientWidth || 700, H = canvas.clientHeight || 400;
+  for (const name of Object.keys(graph)) {
+    if (!pos[name]) {
+      const angle = Math.random() * Math.PI * 2;
+      const r     = 60 + Math.random() * Math.min(W, H) * 0.28;
+      pos[name] = { x: W/2 + Math.cos(angle)*r, y: H/2 + Math.sin(angle)*r, vx:0, vy:0 };
+    }
+  }
+  // Remove stale
+  for (const k of Object.keys(pos)) {
+    if (!userExists(k)) delete pos[k];
+  }
+}
+
+function resizeCanvas() {
+  const W = canvas.clientWidth;
+  const H = canvas.clientHeight;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function forceStep() {
+  const W = canvas.clientWidth || 700, H = canvas.clientHeight || 400;
+  const nodes = Object.keys(graph);
+  const k = 110;
+  // Repulsion
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i+1; j < nodes.length; j++) {
+      const a = pos[nodes[i]], b = pos[nodes[j]];
+      if (!a || !b) continue;
+      let dx = a.x - b.x, dy = a.y - b.y;
+      const d = Math.max(Math.sqrt(dx*dx+dy*dy), 1);
+      const f = (k*k) / d * 0.04;
+      a.vx += dx/d*f; a.vy += dy/d*f;
+      b.vx -= dx/d*f; b.vy -= dy/d*f;
+    }
+  }
+  // Attraction along edges
+  for (const u of nodes) {
+    for (const v of graph[u]) {
+      if (u >= v) continue;
+      const a = pos[u], b = pos[v];
+      if (!a || !b) continue;
+      let dx = b.x-a.x, dy = b.y-a.y;
+      const d = Math.max(Math.sqrt(dx*dx+dy*dy), 1);
+      const f = (d*d)/(k) * 0.05;
+      a.vx += dx/d*f; a.vy += dy/d*f;
+      b.vx -= dx/d*f; b.vy -= dy/d*f;
+    }
+  }
+  // Gravity to center
+  for (const n of nodes) {
+    const p = pos[n]; if (!p) continue;
+    p.vx += (W/2 - p.x) * 0.004;
+    p.vy += (H/2 - p.y) * 0.004;
+  }
+  // Apply velocity
+  for (const n of nodes) {
+    const p = pos[n];
+    if (!p || p === dragging) continue;
+    p.vx *= 0.72; p.vy *= 0.72;
+    p.x = Math.max(28, Math.min(W-28, p.x + p.vx));
+    p.y = Math.max(28, Math.min(H-28, p.y + p.vy));
+  }
+}
+
+function drawGraph() {
+  const W = canvas.clientWidth || 700, H = canvas.clientHeight || 400;
+  ctx.clearRect(0, 0, W, H);
+
+  ensurePositions();
+  const hlSet = new Set(highlightPath);
+
+  // Draw edges
+  for (const u of Object.keys(graph)) {
+    for (const v of graph[u]) {
+      if (u >= v) continue;
+      const a = pos[u], b = pos[v]; if (!a || !b) continue;
+      const isHl = hlSet.has(u) && hlSet.has(v);
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = isHl ? '#39ff8a' : 'rgba(100,120,160,0.2)';
+      ctx.lineWidth   = isHl ? 2.5 : 1;
+      ctx.stroke();
+    }
+  }
+
+  // Draw nodes
+  for (const n of Object.keys(graph)) {
+    const p = pos[n]; if (!p) continue;
+    const c    = colFor(n);
+    const r    = 14 + Math.min(graph[n].size * 2, 10);
+    const isHl = hlSet.has(n);
+
+    // Glow
+    const g = ctx.createRadialGradient(p.x,p.y,0, p.x,p.y,r*2.8);
+    g.addColorStop(0, c+'55'); g.addColorStop(1,'transparent');
+    ctx.beginPath(); ctx.arc(p.x,p.y,r*2.8,0,Math.PI*2);
+    ctx.fillStyle = g; ctx.fill();
+
+    // Fill + stroke
+    ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2);
+    ctx.fillStyle = c+'1a'; ctx.fill();
+    ctx.strokeStyle = isHl ? '#39ff8a' : c;
+    ctx.lineWidth   = isHl ? 3 : 1.5;
+    ctx.stroke();
+
+    // Initial letter
+    ctx.fillStyle   = isHl ? '#39ff8a' : c;
+    ctx.font        = `bold ${Math.min(r*0.8+3,14)}px 'Space Mono'`;
+    ctx.textAlign   = 'center';
+    ctx.textBaseline= 'middle';
+    ctx.fillText(n[0], p.x, p.y);
+
+    // Name label
+    ctx.fillStyle   = 'rgba(232,234,240,0.75)';
+    ctx.font        = '10px Syne';
+    ctx.fillText(n, p.x, p.y + r + 11);
+  }
+}
+
+function loop() {
+  forceStep();
+  drawGraph();
+  animId = requestAnimationFrame(loop);
+}
+
+// Drag support
+function nodeAt(mx, my) {
+  for (const n of Object.keys(graph)) {
+    const p = pos[n]; if (!p) continue;
+    const r = 14 + Math.min(graph[n].size*2, 10);
+    if (Math.hypot(mx-p.x, my-p.y) < r+6) return p;
+  }
+  return null;
+}
+
+canvas.addEventListener('mousedown', e => {
+  const r = canvas.getBoundingClientRect();
+  dragging = nodeAt(e.clientX - r.left, e.clientY - r.top);
+});
+canvas.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const r = canvas.getBoundingClientRect();
+  dragging.x = e.clientX - r.left;
+  dragging.y = e.clientY - r.top;
+  dragging.vx = dragging.vy = 0;
+});
+canvas.addEventListener('mouseup',    () => dragging = null);
+canvas.addEventListener('mouseleave', () => dragging = null);
+canvas.addEventListener('touchstart', e => {
+  const r = canvas.getBoundingClientRect(), t = e.touches[0];
+  dragging = nodeAt(t.clientX-r.left, t.clientY-r.top);
+}, {passive:true});
+canvas.addEventListener('touchmove', e => {
+  if (!dragging) return;
+  e.preventDefault();
+  const r = canvas.getBoundingClientRect(), t = e.touches[0];
+  dragging.x = t.clientX-r.left; dragging.y = t.clientY-r.top;
+  dragging.vx = dragging.vy = 0;
+}, {passive:false});
+canvas.addEventListener('touchend', () => dragging = null);
+
+// Enter key to add user
+document.getElementById('new-user').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addUser();
+});
+
+// ── Boot ─────────────────────────────────────
+window.addEventListener('load', () => {
+  resizeCanvas();
+  ensurePositions();
+  refreshAll();
+  loop();
+});
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  drawGraph();
+});
+</script>
+</body>
+</html>
